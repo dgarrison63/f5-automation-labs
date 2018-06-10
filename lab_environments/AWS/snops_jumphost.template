@@ -88,7 +88,7 @@
         "Note": "(Oregon)        Ubuntu 16.04 LTS - Xenial (HVM)"
       },
       "us-west-1": {
-        "HVM64": "ami-8edbf0ee",
+        "HVM64": "ami-888997e8",
         "Note": "(N. California) Ubuntu 16.04 LTS - Xenial (HVM)"
       },
       "us-east-2": {
