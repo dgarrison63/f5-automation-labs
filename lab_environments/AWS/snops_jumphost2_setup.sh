@@ -18,45 +18,19 @@ ifconfig eth1 10.1.1.20 netmask 255.255.255.0
 ifconfig eth2 10.1.20.20 netmask 255.255.255.0
 
 # Install desktop environment
-apt-get -y install tightvncserver xrdp
+apt-get -y install xrdp xfce4
 
-# Install specific fonts support
-# Japanese
-apt-get -y install fonts-takao-mincho
 
 # Upgrade xrdp and install xorgxrdp
-service xrdp stop
+systemctl xrdp stop
 cd /root
 apt-get -y install git autoconf libtool pkg-config gcc g++ make  libssl-dev libpam0g-dev libjpeg-dev libx11-dev libxfixes-dev libxrandr-dev  flex bison libxml2-dev intltool xsltproc xutils-dev python-libxml2 g++ xutils libfuse-dev libmp3lame-dev nasm libpixman-1-dev xserver-xorg-dev novnc autocutsel
-git clone https://github.com/neutrinolabs/xrdp.git
-cd xrdp
-./bootstrap
-./configure --prefix=/ --exec-prefix=/usr --enable-fuse --enable-pixman --enable-jpeg
-make
-make install
-
-git clone https://github.com/neutrinolabs/xorgxrdp.git
-cd xorgxrdp
-./bootstrap
-./configure --prefix=/ --exec-prefix=/usr
-make
-make install
-cd ..
 
 systemctl daemon-reload
-systemctl enable xrdp.service
+systemctl enable xrdp
 cd ..
 
 # Configure xrdp
-cat << 'EOF' > /etc/xrdp/startwm.sh
-#!/bin/sh
-if [ -r /etc/default/locale ]; then
-  . /etc/default/locale
-  export LANG LANGUAGE
-fi
-mate-session
-. /etc/X11/Xsession
-EOF
 
 cat << 'EOF' > /etc/xrdp/xrdp.ini
 [Globals]
@@ -106,81 +80,15 @@ code=20
 
 EOF
 
+sh -c 'echo "xfce4-session" > /home/ec2-user/.xsession'
+chown -R ec2-user:ec2-user /home/ec2-user/.xsession
+
 sed -i.bak "s/FuseMountName=thinclient_drives/FuseMountName=remote_drives/g" /etc/xrdp/sesman.ini
-service xrdp start
-rm -Rf /root/xrdp
+systemctl start xrdp
 
-# Setup noVNC
-mkdir /home/ec2-user/.vnc
-echo -e "supernetops\nsupernetops\n" | vncpasswd /home/ec2-user/.vnc/passwd
-cat << 'EOF' > /home/ec2-user/.vnc/xstartup
-#!/bin/sh
-
-xrdb $HOME/.Xresources
-xsetroot -solid grey
-#x-terminal-emulator -geometry 80x24+10+10 -ls -title "$VNCDESKTOP Desktop" &
-#x-window-manager &
-# Fix to make GNOME work
-export XKL_XMODMAP_DISABLE=1
-#/etc/X11/Xsession
-# https://github.com/novnc/noVNC/wiki/Fixing-the-clipboard-under-linux
-autocutsel -s PRIMARY -fork
-mate-session
-. /etc/X11/Xsession
-EOF
-
-chmod +x /home/ec2-user/.vnc/xstartup
-chown -R ec2-user:ec2-user /home/ec2-user/.vnc
-
-mkdir /opt/f5_novnc
-cd /opt/f5_novnc
-git clone https://github.com/novnc/noVNC
-echo -e "\n\n\n\n\n\n\n" | openssl req -new -x509 -days 365 -nodes -out self.pem -keyout self.pem
-cd noVNC
-perl -pi -e 's/\"password\"/\"password\" value=\"supernetops\"/g' vnc.html
-
-chown ec2-user:ec2-user /opt/f5_novnc/self.pem
-
-ln -s /opt/f5_novnc/noVNC/vnc.html /opt/f5_novnc/noVNC/index.html
-
-cat << 'EOF' > /etc/systemd/system/vncserver@.service
-[Unit]
-Description=Start TightVNC server at startup
-After=syslog.target network.target
-
-[Service]
-Type=forking
-User=ec2-user
-PAMName=login
-PIDFile=/home/ec2-user/.vnc/%H:%i.pid
-ExecStartPre=-/usr/bin/vncserver -kill :%i > /dev/null 2>&1
-ExecStart=/usr/bin/vncserver -depth 24 -geometry 1920x1080 :%i
-ExecStop=/usr/bin/vncserver -kill :%i
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-cat << 'EOF' > /etc/systemd/system/f5-novncproxy.service
-[Unit]
-Description=F5 NoVNC Proxy Server
-After=syslog.target network.target
-
-[Service]
-Type=simple
-User=ec2-user
-ExecStart=/usr/bin/websockify --web /opt/f5_novnc/noVNC --cert  /opt/f5_novnc/self.pem 6080 localhost:5901
-
-[Install]
-WantedBy=multi-user.target
-EOF
 
 # enable/start vncserver/noVNC
 systemctl daemon-reload
-systemctl enable vncserver@1.service
-systemctl enable f5-novncproxy
-systemctl start vncserver@1.service
-systemctl start f5-novncproxy
 
 # Install Chrome setup and add the desktop icon
 wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
