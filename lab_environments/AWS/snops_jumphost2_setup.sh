@@ -106,15 +106,6 @@ Host 10.1.*.*
 
 EOF
 
-# Install docker
-curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
-add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable"
-apt-get update
-apt-get install -y docker-ce
-
-# pull the f5-super-netops images : base, jenkins, ansible
-docker pull vulnerables/web-dvwa
-
 
 # Install Postman
 wget https://dl.pstmn.io/download/latest/linux64 -O postman.tar.gz
