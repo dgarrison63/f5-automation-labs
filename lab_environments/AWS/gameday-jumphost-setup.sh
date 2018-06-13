@@ -16,7 +16,7 @@ set -x
 apt update
 
 # Install desktop environment
-apt-get -y install git xrdp lxde-core lxde tigervnc-standalone-server libgconf-2-4
+DEBIAN_FRONTEND=noninteractive apt-get -y install git xrdp lxde-core lxde tigervnc-standalone-server libgconf-2-4 -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
 
 
 # Configure xrdp to be enabled and started
@@ -27,7 +27,7 @@ systemctl start xrdp
 wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
 sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list'
 apt-get -y update
-apt-get -y install google-chrome-stable
+DEBIAN_FRONTEND=noninteractive apt-get -y install google-chrome-stable -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold"
 
 # Disable SSH Host Key Checking for hosts in the lab
 cat << 'EOF' >> /etc/ssh/ssh_config
@@ -104,4 +104,3 @@ chmod +x /home/ec2-user/Desktop/Postman.desktop
 
 # Things are created as root, need to transfer ownership
 chown -R ec2-user:ec2-user /home/ec2-user/Desktop
-chown -R ec2-user:ec2-user /home/ec2-user/f5-automation-labs
