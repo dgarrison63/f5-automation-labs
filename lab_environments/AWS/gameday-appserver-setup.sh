@@ -19,16 +19,4 @@ Match address 10.1.1.0/24
 EOF
 service ssh restart
 
-# Install docker
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-apt-get update
-apt-get install -y docker-ce
 
-# Start the f5-demo-httpd container
-cat << 'EOF' > /etc/rc.local
-#!/bin/sh -e
-docker run -d -p 80:80 --restart unless-stopped vulnerables/web-dvwa
-EOF
-
-sh /etc/rc.local
